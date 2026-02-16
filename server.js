@@ -168,6 +168,43 @@ app.post('/api/punch', async (req, res) => {
   }
 });
 
+app.post('/api/identify', async (req, res) => {
+  try {
+    const { descriptor } = req.body || {};
+
+    if (!isValidDescriptor(descriptor)) {
+      return res.status(400).json({ error: 'invalid descriptor' });
+    }
+
+    const bestMatch = await findBestMatch(descriptor);
+
+    if (!bestMatch) {
+      return res.status(404).json({ error: 'no enrolled people found' });
+    }
+
+    if (bestMatch.distance > MATCH_THRESHOLD) {
+      return res.status(200).json({
+        matched: false,
+        distance: Number(bestMatch.distance.toFixed(4)),
+        threshold: MATCH_THRESHOLD,
+      });
+    }
+
+    return res.json({
+      matched: true,
+      person: {
+        id: bestMatch.id,
+        fullName: bestMatch.fullName,
+        age: bestMatch.age,
+      },
+      distance: Number(bestMatch.distance.toFixed(4)),
+      threshold: MATCH_THRESHOLD,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

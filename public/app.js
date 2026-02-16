@@ -3,6 +3,7 @@ const canvas = document.getElementById('canvas');
 const statusBox = document.getElementById('status');
 const fullNameInput = document.getElementById('fullNameInput');
 const ageInput = document.getElementById('ageInput');
+const identifiedPersonBox = document.getElementById('identifiedPerson');
 
 const startCameraBtn = document.getElementById('startCameraBtn');
 const stopCameraBtn = document.getElementById('stopCameraBtn');
@@ -11,6 +12,8 @@ const punchBtn = document.getElementById('punchBtn');
 
 let stream = null;
 let modelsLoaded = false;
+let identifyIntervalId = null;
+let identifying = false;
 
 function setStatus(message, isError = false) {
   statusBox.textContent = message;
@@ -109,6 +112,58 @@ async function apiPost(url, body) {
   return data;
 }
 
+function setIdentifiedPerson(text, isError = false) {
+  identifiedPersonBox.textContent = text;
+  identifiedPersonBox.className = isError ? 'error' : 'sub';
+}
+
+async function tryIdentifyFace() {
+  if (identifying || !stream) {
+    return;
+  }
+
+  identifying = true;
+  try {
+    const descriptor = await captureDescriptor();
+    const result = await apiPost('/api/identify', { descriptor });
+
+    if (result.matched) {
+      setIdentifiedPerson(
+        `Nome: ${result.person.fullName} | Idade: ${result.person.age} | Distancia: ${result.distance}`
+      );
+    } else {
+      setIdentifiedPerson('Rosto detectado, mas sem correspondencia cadastrada.');
+    }
+  } catch (error) {
+    if (error.message.includes('Nenhum rosto detectado')) {
+      setIdentifiedPerson('Nenhum rosto detectado no momento.');
+    } else {
+      setIdentifiedPerson(`Falha ao identificar: ${error.message}`, true);
+    }
+  } finally {
+    identifying = false;
+  }
+}
+
+function startAutoIdentify() {
+  if (identifyIntervalId) {
+    return;
+  }
+
+  identifyIntervalId = setInterval(() => {
+    tryIdentifyFace();
+  }, 2200);
+}
+
+function stopAutoIdentify() {
+  if (!identifyIntervalId) {
+    return;
+  }
+
+  clearInterval(identifyIntervalId);
+  identifyIntervalId = null;
+}
+
 startCameraBtn.addEventListener('click', async () => {
   try {
     setStatus('Carregando modelos faciais...');
@@ -116,14 +171,18 @@ startCameraBtn.addEventListener('click', async () => {
     setStatus('Iniciando camera...');
     await startCamera();
     setStatus('Camera pronta.');
+    setIdentifiedPerson('Detectando rosto...');
+    startAutoIdentify();
   } catch (error) {
     setStatus(error.message, true);
   }
 });
 
 stopCameraBtn.addEventListener('click', () => {
+  stopAutoIdentify();
   stopCamera();
   setStatus('Camera parada.');
+  setIdentifiedPerson('Nenhuma pessoa identificada ainda.');
 });
 
 enrollBtn.addEventListener('click', async () => {
@@ -150,6 +209,9 @@ enrollBtn.addEventListener('click', async () => {
     setStatus(
       `Pessoa cadastrada com sucesso\nNome: ${result.person.full_name}\nIdade: ${result.person.age}`
     );
+    setIdentifiedPerson(
+      `Nome: ${result.person.full_name} | Idade: ${result.person.age} | Cadastro atualizado`
+    );
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -175,9 +237,15 @@ punchBtn.addEventListener('click', async () => {
     ].join('\n');
 
     setStatus(msg);
+    setIdentifiedPerson(
+      `Nome: ${result.person.fullName} | Idade: ${result.person.age} | Reconhecido`
+    );
   } catch (error) {
     setStatus(error.message, true);
   }
 });
 
-window.addEventListener('beforeunload', stopCamera);
+window.addEventListener('beforeunload', () => {
+  stopAutoIdentify();
+  stopCamera();
+});
