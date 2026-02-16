@@ -1,0 +1,49 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bater Ponto Facial</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+      window.APP_CONFIG = {
+        modelUrl: "https://justadudewhohacks.github.io/face-api.js/models"
+      };
+    </script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Registro de Ponto Facial</h1>
+      <p class="sub">Use a camera para cadastrar pessoa ou bater ponto.</p>
+
+      <div class="camera-box">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas" width="640" height="480" hidden></canvas>
+      </div>
+
+      <div class="row">
+        <button id="startCameraBtn" type="button">Iniciar Camera</button>
+        <button id="stopCameraBtn" type="button" class="ghost">Parar Camera</button>
+      </div>
+
+      <section class="card">
+        <h2>Cadastrar pessoa</h2>
+        <label for="fullNameInput">Nome</label>
+        <input id="fullNameInput" placeholder="ex: Joao Silva" />
+        <label for="ageInput">Idade</label>
+        <input id="ageInput" type="number" min="1" max="120" placeholder="ex: 28" />
+        <button id="enrollBtn" type="button">Cadastrar com Foto</button>
+      </section>
+
+      <section class="card">
+        <h2>Bater ponto</h2>
+        <p class="sub">Tire apenas a foto. O sistema identifica entre os cadastrados.</p>
+        <button id="punchBtn" type="button">Bater Ponto com Foto</button>
+      </section>
+
+      <pre id="status"></pre>
+    </main>
+  </body>
+</html>
