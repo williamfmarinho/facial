@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "facial-ponto",
   "version": "1.0.0",
   "description": "Face recognition time clock using PostgreSQL and Railway",
